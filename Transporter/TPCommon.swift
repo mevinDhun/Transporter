@@ -22,14 +22,14 @@ public enum TPMethod : String {
     case PUT    = "PUT"
 }
 
-public typealias ProgressHandler = (completedBytes: Int64, totalBytes: Int64) -> ()
-public typealias CompletionHandler = (tasks: [TPTransferTask]) -> ()
-public typealias TransferCompletionHandler = (response: NSHTTPURLResponse?, json: AnyObject?, error: NSError?) -> ()
+public typealias ProgressHandler = (_ completedBytes: Int64, _ totalBytes: Int64) -> ()
+public typealias CompletionHandler = (_ tasks: [TPTransferTask]) -> ()
+public typealias TransferCompletionHandler = (_ response: HTTPURLResponse?, _ json: AnyObject?, _ error: NSError?) -> ()
 
 infix operator --> { associativity left precedence 160 }
 
 public func --> (left: TPTransferTask, right: TPTransferTask) -> TPTaskGroup {
-    return TPTaskGroup(left: left, right: right, mode: .Serialization)
+    return TPTaskGroup(left: left, right: right, mode: .serialization)
 }
 
 public func --> (left: TPTaskGroup, right: TPTransferTask) -> TPTaskGroup {
@@ -39,7 +39,7 @@ public func --> (left: TPTaskGroup, right: TPTransferTask) -> TPTaskGroup {
 infix operator ||| { associativity left precedence 160 }
 
 public func ||| (left: TPTransferTask, right: TPTransferTask) -> TPTaskGroup {
-    return TPTaskGroup(left: left, right: right, mode: .Concurrency)
+    return TPTaskGroup(left: left, right: right, mode: .concurrency)
 }
 
 public func ||| (left: TPTaskGroup, right: TPTransferTask) -> TPTaskGroup {
@@ -47,27 +47,27 @@ public func ||| (left: TPTaskGroup, right: TPTransferTask) -> TPTaskGroup {
 }
 
 // http boby builder
-func queryStringFromParams(params: [String: AnyObject]) -> String {
+func queryStringFromParams(_ params: [String: AnyObject]) -> String {
     let paramsArray = convertParamsToArray(params)
-    let queryString = paramsArray.map{ "\($0)=\($1)" }.joinWithSeparator("&")
+    let queryString = paramsArray.map{ "\($0)=\($1)" }.joined(separator: "&")
     
-    return queryString.stringByAddingPercentEscapesUsingEncoding(NSUTF8StringEncoding)!
+    return queryString.addingPercentEscapes(using: String.Encoding.utf8)!
 }
 
-func convertParamsToArray(params: [String: AnyObject]) -> [(String, AnyObject)] {
+func convertParamsToArray(_ params: [String: AnyObject]) -> [(String, AnyObject)] {
     var result = [(String, AnyObject)]()
     
     for (key, value) in params {
         if let arrayValue = value as? NSArray {
             for nestedValue in arrayValue {
                 let dic = ["\(key)[]": nestedValue]
-                result += convertParamsToArray(dic)
+                result += convertParamsToArray(dic as [String : AnyObject])
             }
         }
         else if let dicValue = value as? NSDictionary {
             for (nestedKey, nestedValue) in dicValue {
                 let dic = ["\(key)[\(nestedKey)]": nestedValue]
-                result += convertParamsToArray(dic)
+                result += convertParamsToArray(dic as [String : AnyObject])
             }
         }
         else {

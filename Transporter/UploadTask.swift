@@ -9,38 +9,38 @@
 import Foundation
 
 public enum UploadDataType {
-    case Data
-    case File
-    case Stream
+    case data
+    case file
+    case stream
 }
 
-public class UploadTask : TPTransferTask {
-    var task: NSURLSessionUploadTask?
-    var uploadDataType: UploadDataType = .File
-    var file: NSURL?
-    var data: NSData?
-    var stream: NSInputStream?
+open class UploadTask : TPTransferTask {
+    var task: URLSessionUploadTask?
+    var uploadDataType: UploadDataType = .file
+    var file: URL?
+    var data: Data?
+    var stream: InputStream?
     
     public override init(url: String, params: [String: AnyObject]? = nil) {
         super.init(url: url, params: params)
         method = .POST
     }
     
-    public convenience init(url: String, data: NSData) {
+    public convenience init(url: String, data: Data) {
         self.init(url: url)
-        uploadDataType = .Data
+        uploadDataType = .data
         self.data = data
-        totalBytes = Int64(data.length)
+        totalBytes = Int64(data.count)
     }
     
-    public convenience init(url: String, file: NSURL) {
+    public convenience init(url: String, file: URL) {
         self.init(url: url)
-        uploadDataType = .File
+        uploadDataType = .file
         self.file = file
         
         var error: NSError?
         do {
-            let attr: NSDictionary = try NSFileManager.defaultManager().attributesOfItemAtPath(file.path!)
+            let attr: NSDictionary = try FileManager.default.attributesOfItem(atPath: file.path) as NSDictionary
             if error == nil {
                 totalBytes = Int64(attr.fileSize())
             }
@@ -49,9 +49,9 @@ public class UploadTask : TPTransferTask {
         }
     }
     
-    public convenience init(url: String, stream: NSInputStream) {
+    public convenience init(url: String, stream: InputStream) {
         self.init(url: url)
-        uploadDataType = .Stream
+        uploadDataType = .stream
         self.stream = stream
     }
     
@@ -59,20 +59,20 @@ public class UploadTask : TPTransferTask {
         super.setup()
         if let request = request {
             switch uploadDataType {
-            case .File:
+            case .file:
                 if let file = self.file {
-                    task = session?.uploadTaskWithRequest(request, fromFile: file)
+                    task = session?.uploadTask(with: request as URLRequest, fromFile: file)
                 }
-            case .Data:
-                task = session?.uploadTaskWithRequest(request, fromData: data!)
-            case .Stream:
-                task = session?.uploadTaskWithStreamedRequest(request)
+            case .data:
+                task = session?.uploadTask(with: request as URLRequest, from: data!)
+            case .stream:
+                task = session?.uploadTask(withStreamedRequest: request as URLRequest)
                 break
             }
         }
     }
     
-    public override func resume() {
+    open override func resume() {
         NSLog("[UploadTask] did resume")
         task?.resume()
     }

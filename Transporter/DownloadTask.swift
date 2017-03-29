@@ -8,12 +8,12 @@
 
 import Foundation
 
-public class DownloadTask : TPTransferTask {
-    var task: NSURLSessionDownloadTask?
-    var destination: NSURL
+open class DownloadTask : TPTransferTask {
+    var task: URLSessionDownloadTask?
+    var destination: URL
     var movingError: NSError?
     
-    public init(url: String, destination: NSURL, params: [String: AnyObject]? = nil) {
+    public init(url: String, destination: URL, params: [String: AnyObject]? = nil) {
         self.destination = destination
         super.init(url: url, params: params)
         method = .GET
@@ -22,11 +22,12 @@ public class DownloadTask : TPTransferTask {
     override func setup() {
         super.setup()
         if let request = request {
-            task = session?.downloadTaskWithRequest(request)
+            
+            task = session?.downloadTask(with: request  as URLRequest)
         }
     }
     
-    public override func resume() {
+    open override func resume() {
         NSLog("[DownloadTask] did resume")
         task?.resume()
     }

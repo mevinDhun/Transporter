@@ -15,13 +15,13 @@ class ViewController: UIViewController {
         super.viewDidLoad()
     }
    
-    @IBAction func didPressedStartButton(sender: AnyObject) {
+    @IBAction func didPressedStartButton(_ sender: AnyObject) {
         let downloadUrl1 = "https://developer.apple.com/library/ios/documentation/iphone/conceptual/iphoneosprogrammingguide/iphoneappprogrammingguide.pdf"
         let downloadUrl2 = "https://developer.apple.com/library/ios/documentation/iphone/conceptual/iphoneosprogrammingguide/iphoneappprogrammingguide.pdf"
         let downloadUrl3 = "https://developer.apple.com/library/prerelease/ios/releasenotes/DeveloperTools/RN-Xcode/Xcode_Release_Notes.pdf"
         let uploadUrl = "http://httpbin.org/post"
-        let documentsPath: AnyObject = NSSearchPathForDirectoriesInDomains(.DocumentDirectory,.UserDomainMask,true)[0]
-        let des =  NSURL(string: documentsPath.stringByAppendingString("/file.pdf"))!
+        let documentsPath: AnyObject = NSSearchPathForDirectoriesInDomains(.documentDirectory,.userDomainMask,true)[0] as AnyObject
+        let des =  URL(string: documentsPath.appending("/file.pdf"))!
 
         // Downloading tasks
         let task1 = DownloadTask(url: downloadUrl1, destination: des)
@@ -52,8 +52,8 @@ class ViewController: UIViewController {
             }
         
         // Uploading tasks
-        let path = NSBundle.mainBundle().pathForResource("zip_file", ofType: "zip")
-        let fileUrl = NSURL(fileURLWithPath: path!)
+        let path = Bundle.main.path(forResource: "zip_file", ofType: "zip")
+        let fileUrl = URL(fileURLWithPath: path!)
         let task4 = UploadTask(url: uploadUrl, file: fileUrl)
             .progress { cur, total in
                 let per = Double(cur) / Double(total)
@@ -64,8 +64,8 @@ class ViewController: UIViewController {
                 //println("task4: \(json)")
             }
         
-        let path2 = NSBundle.mainBundle().pathForResource("zip_file2", ofType: "zip")
-        let fileUrl2 = NSURL(fileURLWithPath: path!)
+        let path2 = Bundle.main.path(forResource: "zip_file2", ofType: "zip")
+        let fileUrl2 = URL(fileURLWithPath: path!)
         let task5 = UploadTask(url: uploadUrl, file: fileUrl2)
             .progress { cur, total in
                 let per = Double(cur) / Double(total)
@@ -88,24 +88,24 @@ class ViewController: UIViewController {
             return task
         }
        
-        /*
-        Transporter.add([task1, task2])
-            .completed {
-                println("transaction1: completed")
+        
+        Transporter.add([task4, task5])
+            .completed {_ in 
+                print("transaction1: completed")
             }
             .add(task3)
-            .completed {
-                println("transaction2: completed")
+            .completed {_ in 
+                print("transaction2: completed")
             }
             .resume()
         
         Transporter.add(task4)
-            .completed {
-                println("transaction3: completed")
+            .completed {_ in 
+                print("transaction3: completed")
             }
             .resume()
-        */
-        
+ 
+        /*
         Transporter.add(task1 ||| task2 ||| task3)
             .progress { cur, total in
                 let ratio = Double(cur) / Double(total)
@@ -116,6 +116,8 @@ class ViewController: UIViewController {
             }
             .add(task4 --> task5)
             .resume()
+        */
+        
         
         /*
             .add(task1)

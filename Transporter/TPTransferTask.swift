@@ -17,23 +17,23 @@ import Foundation
 - cancel
 */
 
-public class TPTransferTask : TPTask {
-    public var method: TPMethod = .GET
-    public var HTTPShouldUsePipelining = false
-    public var HTTPShouldHandleCookies = true
-    public var allowsCellularAccess = true
-    public var params: [String: AnyObject]?
-    public var headers: [String: String]?
-    public var completionHandler: TransferCompletionHandler?
+open class TPTransferTask : TPTask {
+    open var method: TPMethod = .GET
+    open var HTTPShouldUsePipelining = false
+    open var HTTPShouldHandleCookies = true
+    open var allowsCellularAccess = true
+    open var params: [String: AnyObject]?
+    open var headers: [String: String]?
+    open var completionHandler: TransferCompletionHandler?
     
     var url: String
     var request: NSMutableURLRequest?
     var totalBytes: Int64 = 0
-    var session: NSURLSession?
-    var responseData: NSData?
+    var session: URLSession?
+    var responseData: Data?
     var jsonData: AnyObject? {
         if let reponseData = responseData {
-            return try? NSJSONSerialization.JSONObjectWithData(reponseData, options: .AllowFragments)
+            return try! JSONSerialization.jsonObject(with: reponseData, options: .allowFragments) as AnyObject?
         }
         return nil
     }
@@ -49,11 +49,11 @@ public class TPTransferTask : TPTask {
     }
    
     func setup() {
-        let requestUrl = NSURL(string: url)!
-        let request = NSMutableURLRequest(URL: requestUrl)
-        request.HTTPMethod = method.rawValue
-        request.HTTPShouldUsePipelining = HTTPShouldUsePipelining
-        request.HTTPShouldHandleCookies = HTTPShouldHandleCookies
+        let requestUrl = URL(string: url)!
+        let request = NSMutableURLRequest(url: requestUrl)
+        request.httpMethod = method.rawValue
+        request.httpShouldUsePipelining = HTTPShouldUsePipelining
+        request.httpShouldHandleCookies = HTTPShouldHandleCookies
         request.allowsCellularAccess = allowsCellularAccess
         
         // append header
@@ -66,15 +66,15 @@ public class TPTransferTask : TPTask {
         if let params = params {
             if method == .GET {
                 let query = queryStringFromParams(params)
-                let newUrl = url.stringByAppendingString("?\(query)")
-                request.URL = NSURL(string: newUrl)
+                let newUrl = url + "?\(query)"
+                request.url = URL(string: newUrl)
             }
         }
         
         self.request = request
     }
     
-    public func completed(handler: TransferCompletionHandler) -> Self {
+    open func completed(_ handler: @escaping(TransferCompletionHandler)) -> Self {
         completionHandler = handler
         return self
     }

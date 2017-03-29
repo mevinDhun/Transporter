@@ -16,15 +16,15 @@ import UIKit
 */
 
 public enum RunMode {
-    case Concurrency
-    case Serialization
+    case concurrency
+    case serialization
 }
 
-public class TPTaskGroup : TPTask {
-    public var completionHandler: CompletionHandler?
+open class TPTaskGroup : TPTask {
+    open var completionHandler: CompletionHandler?
     
     var tasks: [TPTransferTask] = []
-    var sessions: [NSURLSession] = []
+    var sessions: [Foundation.URLSession] = []
     var mode: RunMode!
     var configured: Bool = false
     var next: TPTaskGroup?
@@ -32,17 +32,17 @@ public class TPTaskGroup : TPTask {
     var totalBytes: Int64 = 0
     var completedBytes: Int64 = 0
     
-    private var sessionTasks: [NSURLSessionTask: TPTransferTask] = [:]
+    fileprivate var sessionTasks: [URLSessionTask: TPTransferTask] = [:]
     
     public init(task: TPTransferTask) {
         super.init()
-        mode = .Serialization
+        mode = .serialization
         tasks = [task]
     }
    
     public init(tasks: [TPTransferTask]) {
         super.init()
-        mode = .Concurrency
+        mode = .concurrency
         self.tasks = tasks
     }
     
@@ -52,21 +52,21 @@ public class TPTaskGroup : TPTask {
         tasks = [left, right]
     }
     
-    public func append(task: TPTransferTask) -> Self {
+    open func append(_ task: TPTransferTask) -> Self {
         tasks.append(task)
         return self
     }
     
-    override public func resume() {
+    override open func resume() {
         if !configured {
             switch mode! {
-            case .Concurrency:
+            case .concurrency:
                 let session = createSession()
                 sessions = [session]
                 for task in tasks {
                     task.session = session
                 }
-            case .Serialization:
+            case .serialization:
                 for task in tasks {
                     let session = createSession()
                     sessions.append(session)
@@ -85,7 +85,7 @@ public class TPTaskGroup : TPTask {
             totalBytes = tasks.reduce(0) { $0 + $1.totalBytes }
         }
        
-        if mode == .Serialization {
+        if mode == .serialization {
             curTaskIndex = 0
             tasks[curTaskIndex].resume()
         } else {
@@ -95,36 +95,36 @@ public class TPTaskGroup : TPTask {
         }
     }
    
-    public func completed(handler: CompletionHandler) -> Self {
+    open func completed(_ handler: @escaping CompletionHandler) -> Self {
         completionHandler = handler
         return self
     }
     
-    private func createSession() -> NSURLSession {
-        let identifier = NSUUID().UUIDString
+    fileprivate func createSession() -> Foundation.URLSession {
+        let identifier = UUID().uuidString
        
-        var configuration: NSURLSessionConfiguration!
+        var configuration: URLSessionConfiguration!
         
         if UIDevice.systemVersionGreaterThanOrEqualTo("8.0") {
-            configuration = NSURLSessionConfiguration.backgroundSessionConfigurationWithIdentifier(identifier)
+            configuration = URLSessionConfiguration.background(withIdentifier: identifier)
         } else {
-            configuration = NSURLSessionConfiguration.backgroundSessionConfiguration(identifier)
+            configuration = URLSessionConfiguration.backgroundSessionConfiguration(identifier)
         }
         
-        configuration.HTTPMaximumConnectionsPerHost = Transporter.HTTPMaximumconnectionsPerHost
+        configuration.httpMaximumConnectionsPerHost = Transporter.HTTPMaximumconnectionsPerHost
         configuration.timeoutIntervalForRequest = Transporter.timeoutIntervalForRequest
         configuration.timeoutIntervalForResource = Transporter.timeoutIntervalForResource
-        configuration.HTTPAdditionalHeaders = Transporter.headers
+        configuration.httpAdditionalHeaders = Transporter.headers
         
-        let session = NSURLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+        let session = Foundation.URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
         return session
     }
 }
 
 
-extension TPTaskGroup : NSURLSessionDelegate {
+extension TPTaskGroup : URLSessionDelegate {
     // All tasks enqueued have been delivered
-    public func URLSessionDidFinishEventsForBackgroundURLSession(session: NSURLSession) {
+    public func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
         // check if all tasks have been completed
         session.getTasksWithCompletionHandler { dataTasks, uploadTasks, downloadTasks in
             if dataTasks.isEmpty && uploadTasks.isEmpty && downloadTasks.isEmpty {
@@ -135,45 +135,45 @@ extension TPTaskGroup : NSURLSessionDelegate {
 }
 
 
-extension TPTaskGroup : NSURLSessionDataDelegate {
-    public func URLSession(session: NSURLSession, dataTask: NSURLSessionDataTask, didReceiveData data: NSData) {
+extension TPTaskGroup : URLSessionDataDelegate {
+    public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         if let task = sessionTasks[dataTask] {
             task.responseData = data
         }
     }
 }
 
-extension TPTaskGroup : NSURLSessionTaskDelegate {
+extension TPTaskGroup : URLSessionTaskDelegate {
     // When any task completes
-    public func URLSession(session: NSURLSession, task: NSURLSessionTask, didCompleteWithError error: NSError?) {
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         NSLog("[Session] a session task did complete with error : \(error)")
         
         let curTask: TPTransferTask! = sessionTasks[task]
         if curTask == nil {
             return
         }
-        curTask.error = error
+        curTask.error = error as NSError?
         curTask.isCompleted = true
             
-        let httpResponse = task.response as? NSHTTPURLResponse
+        let httpResponse = task.response as? HTTPURLResponse
         let json: AnyObject? = curTask.jsonData
-        curTask.completionHandler?(response: httpResponse, json: json, error: error)
+        curTask.completionHandler?(httpResponse, json, error as NSError?)
         
         // find the next task to resume
         switch mode! {
-        case .Concurrency:
+        case .concurrency:
             let groupCompleted = tasks.filter { $0.isRunning }.isEmpty
             if groupCompleted {
-                self.completionHandler?(tasks: tasks)
+                self.completionHandler?(tasks)
                 next?.resume()
             }
         
-        case .Serialization:
-            curTaskIndex++
+        case .serialization:
+            curTaskIndex += 1
             if curTaskIndex < tasks.count && !curTask.failed {
                 tasks[curTaskIndex].resume()
             } else {
-                self.completionHandler?(tasks: tasks)
+                self.completionHandler?(tasks)
                 next?.resume()
             }
         }
@@ -185,18 +185,18 @@ extension TPTaskGroup : NSURLSessionTaskDelegate {
     }
     */
     
-    public func URLSession(session: NSURLSession, task: NSURLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
-        if let uploadTask = task as? NSURLSessionUploadTask {
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+        if let uploadTask = task as? URLSessionUploadTask {
             if let task = sessionTasks[uploadTask] {
                 completedBytes += bytesSent
-                task.progressHandler?(completedBytes: totalBytesSent, totalBytes: totalBytesExpectedToSend)
-                self.progressHandler?(completedBytes: completedBytes, totalBytes: totalBytes)
+                task.progressHandler?(totalBytesSent, totalBytesExpectedToSend)
+                self.progressHandler?(completedBytes, totalBytes)
             }
         }
     }
     
-    public func URLSession(session: NSURLSession, task: NSURLSessionTask, needNewBodyStream completionHandler: (NSInputStream?) -> Void) {
-        if let uploadTask = task as? NSURLSessionUploadTask {
+    public func urlSession(_ session: URLSession, task: URLSessionTask, needNewBodyStream completionHandler: @escaping (InputStream?) -> Void) {
+        if let uploadTask = task as? URLSessionUploadTask {
             if let task = sessionTasks[uploadTask] as? UploadTask {
                 completionHandler(task.stream!)
             }
@@ -205,25 +205,25 @@ extension TPTaskGroup : NSURLSessionTaskDelegate {
 }
 
 
-extension TPTaskGroup : NSURLSessionDownloadDelegate {
+extension TPTaskGroup : URLSessionDownloadDelegate {
     //  The download task has resumed downloading
-    public func URLSession(session: NSURLSession, downloadTask: NSURLSessionDownloadTask, didResumeAtOffset fileOffset: Int64, expectedTotalBytes: Int64) {
+    public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didResumeAtOffset fileOffset: Int64, expectedTotalBytes: Int64) {
     }
     
     // Periodically informs the delegate about the download’s progress
-    public func URLSession(session: NSURLSession, downloadTask: NSURLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+    public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
         if let task = sessionTasks[downloadTask] {
             completedBytes += bytesWritten
-            task.progressHandler?(completedBytes: totalBytesWritten, totalBytes: totalBytesExpectedToWrite)
+            task.progressHandler?(totalBytesWritten, totalBytesExpectedToWrite)
         }
     }
     
     // Download task completes successfully
-    public func URLSession(session: NSURLSession, downloadTask: NSURLSessionDownloadTask, didFinishDownloadingToURL location: NSURL) {
+    public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         NSLog("[Session] Download finished : \(location)")
         if let task = sessionTasks[downloadTask] as? DownloadTask {
             do {
-                try NSFileManager.defaultManager().moveItemAtURL(location, toURL: task.destination)
+                try FileManager.default.moveItem(at: location, to: task.destination as URL)
             } catch let error as NSError {
                 task.movingError = error
             }

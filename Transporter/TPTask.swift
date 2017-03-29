@@ -15,28 +15,28 @@ import Foundation
 - cancel
 */
 
-public class TPTask : NSObject {
-    public var retryCount: UInt = 1
-    public var progressHandler: ProgressHandler?
-    internal(set) public var isCompleted: Bool = false
-    public var isRunning : Bool {
+open class TPTask : NSObject {
+    open var retryCount: UInt = 1
+    open var progressHandler: ProgressHandler?
+    internal(set) open var isCompleted: Bool = false
+    open var isRunning : Bool {
         return !isCompleted
     }
     
-    public func progress(handler: ProgressHandler) -> Self {
+    open func progress(_ handler: @escaping ProgressHandler) -> Self {
         progressHandler = handler
         return self
     }
     
-    public func resume() {
+    open func resume() {
         
     }
     
-    public func suspend() {
+    open func suspend() {
         
     }
     
-    public func cancel() {
+    open func cancel() {
         
     }
 }

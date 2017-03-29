@@ -8,8 +8,8 @@
 
 import Foundation
 
-public class Transaction {
-    private var firstTaskGroup: TPTaskGroup
+open class Transaction {
+    fileprivate var firstTaskGroup: TPTaskGroup
     var currentTaskGroup: TPTaskGroup?
     
     public init(task: TPTransferTask) {
@@ -27,21 +27,21 @@ public class Transaction {
         currentTaskGroup = firstTaskGroup
     }
     
-    public func add(task: TPTransferTask) -> Self {
+    open func add(_ task: TPTransferTask) -> Self {
         let group = TPTaskGroup(task: task)
         currentTaskGroup?.next = group
         currentTaskGroup = group
         return self
     }
     
-    public func add(tasks: [TPTransferTask]) -> Self {
+    open func add(_ tasks: [TPTransferTask]) -> Self {
         let group = TPTaskGroup(tasks: tasks)
         currentTaskGroup?.next = group
         currentTaskGroup = group
         return self
     }
    
-    public func add(taskGroup: TPTaskGroup) -> Self {
+    open func add(_ taskGroup: TPTaskGroup) -> Self {
         currentTaskGroup?.next = taskGroup
         currentTaskGroup = taskGroup
         return self
@@ -49,12 +49,12 @@ public class Transaction {
 }
 
 extension Transaction {
-    public func progress(handler: ProgressHandler) -> Self {
+    public func progress(_ handler: @escaping ProgressHandler) -> Self {
         currentTaskGroup?.progressHandler = handler
         return self
     }
     
-    public func completed(handler: CompletionHandler) -> Self {
+    public func completed(_ handler: @escaping CompletionHandler) -> Self {
         currentTaskGroup?.completionHandler = handler
         return self
     }
