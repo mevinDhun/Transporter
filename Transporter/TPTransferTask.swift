@@ -31,9 +31,10 @@ open class TPTransferTask : TPTask {
     var totalBytes: Int64 = 0
     var session: URLSession?
     var responseData: Data?
-    var jsonData: AnyObject? {
+    var jsonData: String? {
         if let reponseData = responseData {
-            return try! JSONSerialization.jsonObject(with: reponseData, options: .allowFragments) as AnyObject?
+           // return try! JSONSerialization.jsonObject(with: reponseData, options: .allowFragments) as AnyObject?
+            return String.init(data: reponseData, encoding: .utf8)
         }
         return nil
     }
@@ -71,6 +72,8 @@ open class TPTransferTask : TPTask {
             }
         }
         
+       
+        //request.httpBody = "url_preset"
         self.request = request
     }
     

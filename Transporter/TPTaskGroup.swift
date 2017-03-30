@@ -108,7 +108,7 @@ open class TPTaskGroup : TPTask {
         if UIDevice.systemVersionGreaterThanOrEqualTo("8.0") {
             configuration = URLSessionConfiguration.background(withIdentifier: identifier)
         } else {
-            configuration = URLSessionConfiguration.backgroundSessionConfiguration(identifier)
+            configuration = URLSessionConfiguration.background(withIdentifier:identifier)
         }
         
         configuration.httpMaximumConnectionsPerHost = Transporter.HTTPMaximumconnectionsPerHost
@@ -156,7 +156,7 @@ extension TPTaskGroup : URLSessionTaskDelegate {
         curTask.isCompleted = true
             
         let httpResponse = task.response as? HTTPURLResponse
-        let json: AnyObject? = curTask.jsonData
+        let json: String? = curTask.jsonData
         curTask.completionHandler?(httpResponse, json, error as NSError?)
         
         // find the next task to resume
