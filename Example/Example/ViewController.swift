@@ -9,12 +9,16 @@
 import UIKit
 
 class ViewController: UIViewController {
+    
+    @IBOutlet weak var label3: UILabel!
+    @IBOutlet weak var label4: UILabel!
+    @IBOutlet weak var label5: UILabel!
     @IBOutlet weak var startButton: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
     }
-   
+    
     @IBAction func didPressedStartButton(_ sender: AnyObject) {
         let downloadUrl1 = "https://developer.apple.com/library/ios/documentation/iphone/conceptual/iphoneosprogrammingguide/iphoneappprogrammingguide.pdf"
         let downloadUrl2 = "https://developer.apple.com/library/ios/documentation/iphone/conceptual/iphoneosprogrammingguide/iphoneappprogrammingguide.pdf"
@@ -22,7 +26,7 @@ class ViewController: UIViewController {
         let uploadUrl = "http://httpbin.org/post"
         let documentsPath: AnyObject = NSSearchPathForDirectoriesInDomains(.documentDirectory,.userDomainMask,true)[0] as AnyObject
         let des =  URL(string: documentsPath.appending("/file.pdf"))!
-
+        
         // Downloading tasks
         let task1 = DownloadTask(url: downloadUrl1, destination: des)
             .progress { cur, total in
@@ -31,7 +35,7 @@ class ViewController: UIViewController {
             }
             .completed { response, _, error in
                 print("task1: completed")
-            }
+        }
         
         let task2 = DownloadTask(url: downloadUrl2, destination: des)
             .progress { cur, total in
@@ -40,16 +44,23 @@ class ViewController: UIViewController {
             }
             .completed { response, _, error in
                 print("task2: completed")
-            }
-       
+        }
+        
         let task3 = DownloadTask(url: downloadUrl3, destination: des)
             .progress { cur, total in
                 let per = Double(cur) / Double(total)
                 print("task3: downloading: \(per)")
+                DispatchQueue.main.async {
+                    
+                    self.label3.text = "task3: downloading: \(per)"
+                }
             }
             .completed { response, _, error in
                 print("task3: completed")
-            }
+                DispatchQueue.main.async {
+                    self.label3.text = "task3: completed"
+                }
+        }
         
         // Uploading tasks
         let path = Bundle.main.path(forResource: "zip_file", ofType: "zip")
@@ -58,11 +69,17 @@ class ViewController: UIViewController {
             .progress { cur, total in
                 let per = Double(cur) / Double(total)
                 print("task4: uploading: \(per)")
+                DispatchQueue.main.async {
+                    self.label4.text = "task4: uploading: \(per)"
+                }
             }
             .completed { response, json, error in
                 print("task4: completed")
+                DispatchQueue.main.async {
+                    self.label4.text = "task4: completed"
+                }
                 //println("task4: \(json)")
-            }
+        }
         
         let path2 = Bundle.main.path(forResource: "zip_file2", ofType: "zip")
         let fileUrl2 = URL(fileURLWithPath: path!)
@@ -70,66 +87,73 @@ class ViewController: UIViewController {
             .progress { cur, total in
                 let per = Double(cur) / Double(total)
                 print("task5: uploading: \(per)")
+                DispatchQueue.main.async {
+                    self.label5.text = "task5: uploading: \(per)"
+                }
             }
             .completed { response, json, error in
                 print("task5: completed")
+                DispatchQueue.main.async {
+                    self.label5.text = "task5: completed"
+                }
                 //println("task5: \(json)")
-            }
+        }
         
         let tasks = (6...8).map { i -> UploadTask in
             let task = UploadTask(url: uploadUrl, file: fileUrl)
                 .progress { cur, total in
                     let per = Double(cur) / Double(total)
+                    
                     print("task\(i): uploading: \(per)")
                 }
                 .completed { response, json, error in
                     print("task\(i): completed")
-                }
+            }
             return task
         }
-       
+        
         
         Transporter.add([task4, task5])
-            .completed {_ in 
+            .completed {_ in
                 print("transaction1: completed")
             }
             .add(task3)
-            .completed {_ in 
+            .completed {_ in
                 print("transaction2: completed")
             }
             .resume()
         
         Transporter.add(task4)
-            .completed {_ in 
+            .completed {_ in
                 print("transaction3: completed")
             }
             .resume()
- 
+        
         /*
-        Transporter.add(task1 ||| task2 ||| task3)
-            .progress { cur, total in
-                let ratio = Double(cur) / Double(total)
-                print("transaction4: \(ratio)")
-            }
-            .completed { tasks in
-                print("transaction4: completed")
-            }
-            .add(task4 --> task5)
-            .resume()
-        */
+         Transporter.add(task1 ||| task2 ||| task3)
+         .progress { cur, total in
+         let ratio = Double(cur) / Double(total)
+         print("transaction4: \(ratio)")
+         }
+         .completed { tasks in
+         print("transaction4: completed")
+         }
+         .add(task4 --> task5)
+         .resume()
+         */
         
         
         /*
-            .add(task1)
-            .completed {
-                println("transaction5: completed")
-            }
-            .resume()
-            .add(tasks[2] --> tasks[3] --> tasks[4])
-            .completed {
-                println("transaction5: completed")
-            }
-            .resume()
-            */
+         .add(task1)
+         .completed {
+         println("transaction5: completed")
+         }
+         .resume()
+         .add(tasks[2] --> tasks[3] --> tasks[4])
+         .completed {
+         println("transaction5: completed")
+         }
+         .resume()
+         */
     }
 }
